@@ -32,13 +32,14 @@
   <body>
     <div class="container">
       <h1 class="mb-4">Dashboard Stock Opname</h1>
+      <!-- Single Upload Input -->
       <div class="mb-4">
         <label for="fileInput" class="form-label">Upload JSON File:</label>
         <input
           class="form-control"
           type="file"
           id="fileInput"
-          accept="application/json"
+          accept=".json,application/json,text/json"
         />
       </div>
 
@@ -50,7 +51,7 @@
             <canvas id="nominalChart"></canvas>
           </div>
         </div>
-        <!-- Pie Charts for Counts Based on TGL -->
+        <!-- Pie Charts Based on TGL -->
         <div class="chart-container">
           <div class="chart-box">
             <h5>Item Selisih Toko (Berdasarkan TGL Store)</h5>
@@ -61,7 +62,6 @@
             <canvas id="pieCountGudang"></canvas>
           </div>
         </div>
-
         <!-- Data Table -->
         <h5>Data Opname</h5>
         <div class="table-responsive">
@@ -95,6 +95,7 @@
         .getElementById("fileInput")
         .addEventListener("change", function () {
           const file = this.files[0];
+          if (!file) return;
           const reader = new FileReader();
           reader.onload = (e) => {
             const data = JSON.parse(e.target.result);
@@ -109,12 +110,10 @@
       }
 
       function renderDashboard(data) {
-        // Nominal calculations
         let minusStore = 0,
           minusGd = 0,
           plusStore = 0,
           plusGd = 0;
-        // Count for pie based on TGL
         let cntMinusStore = 0,
           cntSesuaiStore = 0,
           cntPlusStore = 0,
@@ -130,15 +129,13 @@
           plusStore += parseMoney(item["Nominal Selisih Plus Store"]);
           plusGd += parseMoney(item["Nominal Selsih Plus GD"]);
 
-          // Store counts: only if TGL Store not empty
-          if (item["TGL Store"] !== "") {
+          if (item["TGL Store"]) {
             totalStore++;
             if (item["Selisih Store"] < 0) cntMinusStore++;
             else if (item["Selisih Store"] === 0) cntSesuaiStore++;
             else cntPlusStore++;
           }
-          // Gudang counts: only if TGL GD not empty
-          if (item["TGL GD"] !== "") {
+          if (item["TGL GD"]) {
             totalGd++;
             if (item["Selisih GD"] < 0) cntMinusGd++;
             else if (item["Selisih GD"] === 0) cntSesuaiGd++;
@@ -146,7 +143,7 @@
           }
         });
 
-        // Render nominal bar chart with larger fonts
+        // Nominal Chart
         new Chart(document.getElementById("nominalChart"), {
           type: "bar",
           data: {
@@ -180,7 +177,7 @@
           plugins: [ChartDataLabels],
         });
 
-        // Pie chart Store with percent labels inside slices
+        // Pie Store
         if (pieCountStoreChart) pieCountStoreChart.destroy();
         pieCountStoreChart = new Chart(
           document.getElementById("pieCountStore"),
@@ -207,11 +204,12 @@
                 },
                 datalabels: {
                   color: "#fff",
-                  formatter: (value, ctx) => {
-                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                    return ((value / sum) * 100).toFixed(1) + "%";
-                  },
                   font: { size: 14, weight: "bold" },
+                  formatter: (v, ctx) =>
+                    (
+                      (v / ctx.dataset.data.reduce((a, b) => a + b, 0)) *
+                      100
+                    ).toFixed(1) + "%",
                 },
                 title: {
                   display: true,
@@ -224,7 +222,7 @@
           }
         );
 
-        // Pie chart Gudang with percent labels
+        // Pie Gudang
         if (pieCountGudangChart) pieCountGudangChart.destroy();
         pieCountGudangChart = new Chart(
           document.getElementById("pieCountGudang"),
@@ -251,11 +249,12 @@
                 },
                 datalabels: {
                   color: "#fff",
-                  formatter: (value, ctx) => {
-                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                    return ((value / sum) * 100).toFixed(1) + "%";
-                  },
                   font: { size: 14, weight: "bold" },
+                  formatter: (v, ctx) =>
+                    (
+                      (v / ctx.dataset.data.reduce((a, b) => a + b, 0)) *
+                      100
+                    ).toFixed(1) + "%",
                 },
                 title: {
                   display: true,
@@ -268,25 +267,19 @@
           }
         );
 
-        // Populate full table
+        // Populate table
         const tbody = document.querySelector("#sampleTable tbody");
         tbody.innerHTML = "";
         data.forEach((item) => {
           tbody.insertAdjacentHTML(
             "beforeend",
             `<tr>
-          <td>${item.No}</td>
-          <td>${item["Nama item"]}</td>
-          <td>${item["TGL Store"]}</td>
-          <td>${item["Fisik Store"]}</td>
-          <td>${item["TGL GD"]}</td>
-          <td>${item["Fisik GD"]}</td>
-          <td>${item["Selisih Store"]}</td>
-          <td>${item["Selisih GD"]}</td>
-          <td>${item["Nominal Selisih Minus Store"]}</td>
-          <td>${item["Nominal Selisih Plus Store"]}</td>
-          <td>${item["Nominal Selsih Minus GD"]}</td>
-          <td>${item["Nominal Selsih Plus GD"]}</td>
+          <td>${item.No}</td><td>${item["Nama item"]}</td>
+          <td>${item["TGL Store"]}</td><td>${item["Fisik Store"]}</td>
+          <td>${item["TGL GD"]}</td><td>${item["Fisik GD"]}</td>
+          <td>${item["Selisih Store"]}</td><td>${item["Selisih GD"]}</td>
+          <td>${item["Nominal Selisih Minus Store"]}</td><td>${item["Nominal Selisih Plus Store"]}</td>
+          <td>${item["Nominal Selsih Minus GD"]}</td><td>${item["Nominal Selsih Plus GD"]}</td>
           <td>${item.KETERANGAN}</td>
         </tr>`
           );
