@@ -10,10 +10,9 @@
   <style>
     body { padding: 1rem; }
     .chart-container { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
-    .chart-box { width: 100%; max-width: 600px; text-align: center; }
-    @media (min-width: 768px) {
-      .chart-box { width: 48%; }
-    }
+    .chart-box { width: 100%; max-width: 600px; text-align: center; position: relative; height: 300px; }
+    @media (min-width: 768px) { .chart-box { width: 48%; height: 350px; } }
+    .chart-box canvas { width: 100% !important; height: 100% !important; }
     table { margin-top: 1rem; }
   </style>
 </head>
@@ -24,215 +23,57 @@
       <label for="fileInput" class="form-label">Upload JSON File:</label>
       <input class="form-control" type="file" id="fileInput" accept=".json" />
     </div>
-
     <div id="content" style="display:none;">
       <div class="chart-container">
-        <div class="chart-box">
-          <h5>Perbandingan Total Nominal Minus & Plus</h5>
-          <canvas id="nominalChart"></canvas>
-        </div>
+        <div class="chart-box"><h5>Perbandingan Total Nominal Minus & Plus</h5><canvas id="nominalChart"></canvas></div>
       </div>
       <div class="chart-container">
-        <div class="chart-box">
-          <h5>Item Selisih Toko (Berdasarkan TGL Store)</h5>
-          <canvas id="pieCountStore"></canvas>
-        </div>
-        <div class="chart-box">
-          <h5>Item Selisih Gudang (Berdasarkan TGL GD)</h5>
-          <canvas id="pieCountGudang"></canvas>
-        </div>
+        <div class="chart-box"><h5>Item Selisih Toko (TGL Store)</h5><canvas id="pieCountStore"></canvas></div>
+        <div class="chart-box"><h5>Item Selisih Gudang (TGL GD)</h5><canvas id="pieCountGudang"></canvas></div>
       </div>
       <h5>Data Opname</h5>
-      <div class="table-responsive">
-        <table class="table table-striped table-bordered" id="sampleTable">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Nama item</th>
-              <th>TGL Store</th>
-              <th>Fisik Store</th>
-              <th>TGL GD</th>
-              <th>Fisik GD</th>
-              <th>Selisih Store</th>
-              <th>Selisih GD</th>
-              <th>Nominal Minus Store</th>
-              <th>Nominal Plus Store</th>
-              <th>Nominal Minus GD</th>
-              <th>Nominal Plus GD</th>
-              <th>KETERANGAN</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <div class="table-responsive"><table class="table table-striped table-bordered" id="sampleTable"><thead><tr><th>No</th><th>Nama item</th><th>TGL Store</th><th>Fisik Store</th><th>TGL GD</th><th>Fisik GD</th><th>Selisih Store</th><th>Selisih GD</th><th>Nominal Minus Store</th><th>Nominal Plus Store</th><th>Nominal Minus GD</th><th>Nominal Plus GD</th><th>KETERANGAN</th></tr></thead><tbody></tbody></table></div>
     </div>
   </div>
-
   <script>
-    let pieCountStoreChart, pieCountGudangChart;
-    document.getElementById('fileInput').addEventListener('change', function() {
-      const selectedFile = this.files[0];
-      if (!selectedFile) return;
-      const name = selectedFile.name.toLowerCase();
-      if (!name.endsWith('.json')) {
-        alert('Mohon pilih file dengan ekstensi .json');
-        this.value = null;
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = JSON.parse(e.target.result);
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const input = document.getElementById('fileInput');
+      input.addEventListener('change', async function(){
+        const file = this.files[0]; if(!file) return;
+        if(!file.name.toLowerCase().endsWith('.json')){ alert('Mohon pilih file .json'); return; }
+        const text = await file.text();
+        const data = JSON.parse(text);
         renderDashboard(data);
-        document.getElementById('content').style.display = 'block';
-      };
-      reader.readAsText(selectedFile);
+        document.getElementById('content').style.display='block';
+      });
     });
-
-    function parseMoney(val) {
-      return parseInt(val.replace(/[^\d\-]/g, '')) || 0;
-    }
-
-    function renderDashboard(data) {
-      let minusStore = 0, minusGd = 0, plusStore = 0, plusGd = 0;
-      let cntMinusStore = 0, cntSesuaiStore = 0, cntPlusStore = 0, totalStore = 0;
-      let cntMinusGd = 0, cntSesuaiGd = 0, cntPlusGd = 0, totalGd = 0;
-
-      data.forEach(item => {
-        minusStore += parseMoney(item['Nominal Selisih Minus Store']);
-        minusGd += parseMoney(item['Nominal Selsih Minus GD']);
-        plusStore += parseMoney(item['Nominal Selisih Plus Store']);
-        plusGd += parseMoney(item['Nominal Selsih Plus GD']);
-
-        if (item['TGL Store']) {
-          totalStore++;
-          if (item['Selisih Store'] < 0) cntMinusStore++;
-          else if (item['Selisih Store'] === 0) cntSesuaiStore++;
-          else cntPlusStore++;
-        }
-        if (item['TGL GD']) {
-          totalGd++;
-          if (item['Selisih GD'] < 0) cntMinusGd++;
-          else if (item['Selisih GD'] === 0) cntSesuaiGd++;
-          else cntPlusGd++;
-        }
+    function parseMoney(val){ return parseInt(val.replace(/[^\d\-]/g,''))||0; }
+    function renderDashboard(data){
+      // calculations...
+      let minusStore=0,minusGd=0,plusStore=0,plusGd=0;
+      let cntMinusStore=0,cntSesuaiStore=0,cntPlusStore=0,totalStore=0;
+      let cntMinusGd=0,cntSesuaiGd=0,cntPlusGd=0,totalGd=0;
+      data.forEach(item=>{
+        minusStore+=parseMoney(item['Nominal Selisih Minus Store']);
+        minusGd+=parseMoney(item['Nominal Selsih Minus GD']);
+        plusStore+=parseMoney(item['Nominal Selisih Plus Store']);
+        plusGd+=parseMoney(item['Nominal Selsih Plus GD']);
+        if(item['TGL Store']){ totalStore++; if(item['Selisih Store']<0)cntMinusStore++;else if(item['Selisih Store']===0)cntSesuaiStore++;else cntPlusStore++; }
+        if(item['TGL GD']){ totalGd++; if(item['Selisih GD']<0)cntMinusGd++;else if(item['Selisih GD']===0)cntSesuaiGd++;else cntPlusGd++; }
       });
-
-      // Render nominal bar chart
-      new Chart(document.getElementById('nominalChart'), {
-        type: 'bar',
-        data: {
-          labels: ['Store', 'Gudang'],
-          datasets: [
-            { label: 'Minus', data: [minusStore, minusGd] },
-            { label: 'Plus', data: [plusStore, plusGd] }
-          ]
-        },
-        options: {
-          plugins: {
-            datalabels: {
-              anchor: 'end',
-              align: 'top',
-              font: { size: 14, weight: 'bold' },
-              formatter: v => v.toLocaleString()
-            }
-          },
-          scales: {
-            y: {
-              title: { display: true, text: 'Nominal (Rp)', font: { size: 14, weight: 'bold' } },
-              ticks: { font: { size: 12 } }
-            },
-            x: {
-              ticks: { font: { size: 12 } }
-            }
-          }
-        },
-        plugins: [ChartDataLabels]
+      const baseOptions = { responsive:true, maintainAspectRatio:false };
+      new Chart(document.getElementById('nominalChart'),{
+        type:'bar',data:{labels:['Store','Gudang'],datasets:[{label:'Minus',data:[minusStore,minusGd]},{label:'Plus',data:[plusStore,plusGd]}]},options:{...baseOptions,plugins:{datalabels:{anchor:'end',align:'top',font:{size:14,weight:'bold'},formatter:v=>v.toLocaleString()}},scales:{y:{title:{display:true,text:'Nominal (Rp)',font:{size:14,weight:'bold'}},ticks:{font:{size:12}}},x:{ticks:{font:{size:12}}}}},plugins:[ChartDataLabels]
       });
-
-      // Render pie chart for Store
-      if (pieCountStoreChart) pieCountStoreChart.destroy();
-      pieCountStoreChart = new Chart(document.getElementById('pieCountStore'), {
-        type: 'pie',
-        data: {
-          labels: [
-            `Minus (${cntMinusStore})`,
-            `Sesuai (${cntSesuaiStore})`,
-            `Plus (${cntPlusStore})`
-          ],
-          datasets: [{
-            data: [cntMinusStore, cntSesuaiStore, cntPlusStore],
-            backgroundColor: ['#FF6384', '#4BC0C0', '#36A2EB']
-          }]
-        },
-        options: {
-          plugins: {
-            legend: { position: 'top', labels: { font: { size: 16, weight: 'bold' } } },
-            datalabels: {
-              color: '#fff',
-              font: { size: 14, weight: 'bold' },
-              formatter: (v, ctx) => {
-                let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                return (v / sum * 100).toFixed(1) + '%';
-              }
-            },
-            title: { display: true, text: `Store (Total Opname ${totalStore})`, font: { size: 18, weight: 'bold' } }
-          }
-        },
-        plugins: [ChartDataLabels]
+      if(window.pieCountStoreChart)window.pieCountStoreChart.destroy();
+      window.pieCountStoreChart=new Chart(document.getElementById('pieCountStore'),{
+        type:'pie',data:{labels:[`Minus (${cntMinusStore})`,`Sesuai (${cntSesuaiStore})`,`Plus (${cntPlusStore})`],datasets:[{data:[cntMinusStore,cntSesuaiStore,cntPlusStore],backgroundColor:['#FF6384','#4BC0C0','#36A2EB']} ]},options:{...baseOptions,plugins:{legend:{position:'top',labels:{font:{size:16,weight:'bold'}}},datalabels:{color:'#fff',font:{size:14,weight:'bold'},formatter:(v,ctx)=>(v/ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1)+'%'},title:{display:true,text:`Store (Total ${totalStore})`,font:{size:18,weight:'bold'}}}},plugins:[ChartDataLabels]
       });
-
-      // Render pie chart for Gudang
-      if (pieCountGudangChart) pieCountGudangChart.destroy();
-      pieCountGudangChart = new Chart(document.getElementById('pieCountGudang'), {
-        type: 'pie',
-        data: {
-          labels: [
-            `Minus (${cntMinusGd})`,
-            `Sesuai (${cntSesuaiGd})`,
-            `Plus (${cntPlusGd})`
-          ],
-          datasets: [{
-           	data: [cntMinusGd, cntSesuaiGd, cntPlusGd],
-            backgroundColor: ['#FF6384', '#4BC0C0', '#36A2EB']
-          }]
-        },
-        options: {
-          plugins: {
-            legend: { position: 'top', labels: { font: { size: 16, weight: 'bold' } } },
-            datalabels: {
-              color: '#fff',
-              font: { size: 14, weight: 'bold' },
-              formatter: (v, ctx) => {
-                let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                return (v / sum * 100).toFixed(1) + '%';
-              }
-            },
-            title: { display: true, text: `Gudang (Total Opname ${totalGd})`, font: { size: 18, weight: 'bold' } }
-          }
-        },
-        plugins: [ChartDataLabels]
+      if(window.pieCountGudangChart)window.pieCountGudangChart.destroy();
+      window.pieCountGudangChart=new Chart(document.getElementById('pieCountGudang'),{
+        type:'pie',data:{labels:[`Minus (${cntMinusGd})`,`Sesuai (${cntSesuaiGd})`,`Plus (${cntPlusGd})`],datasets:[{data:[cntMinusGd,cntSesuaiGd,cntPlusGd],backgroundColor:['#FF6384','#4BC0C0','#36A2EB']} ]},options:{...baseOptions,plugins:{legend:{position:'top',labels:{font:{size:16,weight:'bold'}}},datalabels:{color:'#fff',font:{size:14,weight:'bold'},formatter:(v,ctx)=>(v/ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1)+'%'},title:{display:true,text:`Gudang (Total ${totalGd})`,font:{size:18,weight:'bold'}}}},plugins:[ChartDataLabels]
       });
-
-      // Populate full table
-      const tbody = document.querySelector('#sampleTable tbody');
-      tbody.innerHTML = '';
-      data.forEach(item => {
-        tbody.insertAdjacentHTML('beforeend', `<tr>
-          <td>${item.No}</td>
-          <td>${item['Nama item']}</td>
-          <td>${item['TGL Store']}</td>
-          <td>${item['Fisik Store']}</td>
-          <td>${item['TGL GD']}</td>
-          <td>${item['Fisik GD']}</td>
-          <td>${item['Selisih Store']}</td>
-          <td>${item['Selisih GD']}</td>
-          <td>${item['Nominal Selisih Minus Store']}</td>
-          <td>${item['Nominal Selisih Plus Store']}</td>
-          <td>${item['Nominal Selsih Minus GD']}</td>
-          <td>${item['Nominal Selsih Plus GD']}</td>
-          <td>${item.KETERANGAN}</td>
-        </tr>`);
-      });
+      const tbody=document.querySelector('#sampleTable tbody');tbody.innerHTML='';data.forEach(item=>{tbody.insertAdjacentHTML('beforeend',`<tr><td>${item.No}</td><td>${item['Nama item']}</td><td>${item['TGL Store']}</td><td>${item['Fisik Store']}</td><td>${item['TGL GD']}</td><td>${item['Fisik GD']}</td><td>${item['Selisih Store']}</td><td>${item['Selisih GD']}</td><td>${item['Nominal Selisih Minus Store']}</td><td>${item['Nominal Selisih Plus Store']}</td><td>${item['Nominal Selsih Minus GD']}</td><td>${item['Nominal Selsih Plus GD']}</td><td>${item.KETERANGAN}</td></tr>`);});
     }
   </script>
 </body>
