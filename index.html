@@ -8,16 +8,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
-    body { padding: 2rem; }
-    .chart-container { display: flex; gap: 2rem; flex-wrap: wrap; margin: 2rem 0; }
-    .chart-box { flex: 1 1 45%; text-align: center; }
-    table { margin-top: 2rem; }
+    body { padding: 1rem; }
+    .chart-container { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+    .chart-box { width: 100%; max-width: 600px; text-align: center; }
+    @media (min-width: 768px) {
+      .chart-box { width: 48%; }
+    }
+    table { margin-top: 1rem; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="mb-4">Dashboard Stock Opname</h1>
-    <div class="mb-4">
+    <h1 class="mb-3">Dashboard Stock Opname</h1>
+    <div class="mb-3">
       <label for="fileInput" class="form-label">Upload JSON File:</label>
       <input class="form-control" type="file" id="fileInput" accept=".json" />
     </div>
@@ -90,9 +93,9 @@
     }
 
     function renderDashboard(data) {
-      let minusStore=0, minusGd=0, plusStore=0, plusGd=0;
-      let cntMinusStore=0, cntSesuaiStore=0, cntPlusStore=0, totalStore=0;
-      let cntMinusGd=0, cntSesuaiGd=0, cntPlusGd=0, totalGd=0;
+      let minusStore = 0, minusGd = 0, plusStore = 0, plusGd = 0;
+      let cntMinusStore = 0, cntSesuaiStore = 0, cntPlusStore = 0, totalStore = 0;
+      let cntMinusGd = 0, cntSesuaiGd = 0, cntPlusGd = 0, totalGd = 0;
 
       data.forEach(item => {
         minusStore += parseMoney(item['Nominal Selisih Minus Store']);
@@ -114,67 +117,119 @@
         }
       });
 
+      // Render nominal bar chart
       new Chart(document.getElementById('nominalChart'), {
-        type:'bar',
-        data:{ labels:['Store','Gudang'], datasets:[
-          {label:'Minus', data:[minusStore,minusGd]},
-          {label:'Plus', data:[plusStore,plusGd]}
-        ]},
-        options:{
-          plugins:{
-            datalabels:{ anchor:'end', align:'top', font:{ size:14, weight:'bold' }, formatter:v=>v.toLocaleString() }
+        type: 'bar',
+        data: {
+          labels: ['Store', 'Gudang'],
+          datasets: [
+            { label: 'Minus', data: [minusStore, minusGd] },
+            { label: 'Plus', data: [plusStore, plusGd] }
+          ]
+        },
+        options: {
+          plugins: {
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              font: { size: 14, weight: 'bold' },
+              formatter: v => v.toLocaleString()
+            }
           },
-          scales:{
-            y:{ title:{ display:true, text:'Nominal (Rp)', font:{ size:14, weight:'bold'} }, ticks:{ font:{ size:12} } },
-            x:{ ticks:{ font:{ size:12} } }
+          scales: {
+            y: {
+              title: { display: true, text: 'Nominal (Rp)', font: { size: 14, weight: 'bold' } },
+              ticks: { font: { size: 12 } }
+            },
+            x: {
+              ticks: { font: { size: 12 } }
+            }
           }
         },
-        plugins:[ChartDataLabels]
+        plugins: [ChartDataLabels]
       });
 
+      // Render pie chart for Store
       if (pieCountStoreChart) pieCountStoreChart.destroy();
       pieCountStoreChart = new Chart(document.getElementById('pieCountStore'), {
-        type:'pie',
-        data:{
-          labels:[`Minus (${cntMinusStore})`,`Sesuai (${cntSesuaiStore})`,`Plus (${cntPlusStore})`],
-          datasets:[{data:[cntMinusStore,cntSesuaiStore,cntPlusStore], backgroundColor:['#FF6384','#4BC0C0','#36A2EB'] }]
+        type: 'pie',
+        data: {
+          labels: [
+            `Minus (${cntMinusStore})`,
+            `Sesuai (${cntSesuaiStore})`,
+            `Plus (${cntPlusStore})`
+          ],
+          datasets: [{
+            data: [cntMinusStore, cntSesuaiStore, cntPlusStore],
+            backgroundColor: ['#FF6384', '#4BC0C0', '#36A2EB']
+          }]
         },
-        options:{
-          plugins:{
-            legend:{ position:'top', labels:{ font:{ size:16, weight:'bold' }}},
-            datalabels:{ color:'#fff', font:{ size:14, weight:'bold' }, formatter:(v,ctx)=>(v/ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1)+'%'},
-            title:{ display:true, text:`Store (Total Opname ${totalStore})`, font:{ size:18, weight:'bold'} }
+        options: {
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 16, weight: 'bold' } } },
+            datalabels: {
+              color: '#fff',
+              font: { size: 14, weight: 'bold' },
+              formatter: (v, ctx) => {
+                let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                return (v / sum * 100).toFixed(1) + '%';
+              }
+            },
+            title: { display: true, text: `Store (Total Opname ${totalStore})`, font: { size: 18, weight: 'bold' } }
           }
         },
-        plugins:[ChartDataLabels]
+        plugins: [ChartDataLabels]
       });
 
+      // Render pie chart for Gudang
       if (pieCountGudangChart) pieCountGudangChart.destroy();
       pieCountGudangChart = new Chart(document.getElementById('pieCountGudang'), {
-        type:'pie',
-        data:{
-          labels:[`Minus (${cntMinusGd})`,`Sesuai (${cntSesuaiGd})`,`Plus (${cntPlusGd})`],
-          datasets:[{data:[cntMinusGd,cntSesuaiGd,cntPlusGd], backgroundColor:['#FF6384','#4BC0C0','#36A2EB'] }]
+        type: 'pie',
+        data: {
+          labels: [
+            `Minus (${cntMinusGd})`,
+            `Sesuai (${cntSesuaiGd})`,
+            `Plus (${cntPlusGd})`
+          ],
+          datasets: [{
+           	data: [cntMinusGd, cntSesuaiGd, cntPlusGd],
+            backgroundColor: ['#FF6384', '#4BC0C0', '#36A2EB']
+          }]
         },
-        options:{
-          plugins:{
-            legend:{ position:'top', labels:{ font:{ size:16, weight:'bold' }}},
-            datalabels:{ color:'#fff', font:{ size:14, weight:'bold' }, formatter:(v,ctx)=>(v/ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1)+'%'},
-            title:{ display:true, text:`Gudang (Total Opname ${totalGd})`, font:{ size:18, weight:'bold'} }
+        options: {
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 16, weight: 'bold' } } },
+            datalabels: {
+              color: '#fff',
+              font: { size: 14, weight: 'bold' },
+              formatter: (v, ctx) => {
+                let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                return (v / sum * 100).toFixed(1) + '%';
+              }
+            },
+            title: { display: true, text: `Gudang (Total Opname ${totalGd})`, font: { size: 18, weight: 'bold' } }
           }
         },
-        plugins:[ChartDataLabels]
+        plugins: [ChartDataLabels]
       });
 
-      const tbody=document.querySelector('#sampleTable tbody'); tbody.innerHTML='';
-      data.forEach(item=>{
+      // Populate full table
+      const tbody = document.querySelector('#sampleTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(item => {
         tbody.insertAdjacentHTML('beforeend', `<tr>
-          <td>${item.No}</td><td>${item['Nama item']}</td>
-          <td>${item['TGL Store']}</td><td>${item['Fisik Store']}</td>
-          <td>${item['TGL GD']}</td><td>${item['Fisik GD']}</td>
-          <td>${item['Selisih Store']}</td><td>${item['Selisih GD']}</td>
-          <td>${item['Nominal Selisih Minus Store']}</td><td>${item['Nominal Selisih Plus Store']}</td>
-          <td>${item['Nominal Selsih Minus GD']}</td><td>${item['Nominal Selsih Plus GD']}</td>
+          <td>${item.No}</td>
+          <td>${item['Nama item']}</td>
+          <td>${item['TGL Store']}</td>
+          <td>${item['Fisik Store']}</td>
+          <td>${item['TGL GD']}</td>
+          <td>${item['Fisik GD']}</td>
+          <td>${item['Selisih Store']}</td>
+          <td>${item['Selisih GD']}</td>
+          <td>${item['Nominal Selisih Minus Store']}</td>
+          <td>${item['Nominal Selisih Plus Store']}</td>
+          <td>${item['Nominal Selsih Minus GD']}</td>
+          <td>${item['Nominal Selsih Plus GD']}</td>
           <td>${item.KETERANGAN}</td>
         </tr>`);
       });
